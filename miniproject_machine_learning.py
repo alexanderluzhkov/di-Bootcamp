@@ -41,7 +41,7 @@ from google.colab import drive
 drive.mount('/content/drive')
 
 import shutil
-shutil.copy('survey_cleaned.csv', '/content/drive/MyDrive/survey_cleaned.csv')  # Change path if needed
+shutil.copy('survey_cleaned.csv', '/content/drive/MyDrive/survey_cleaned.csv')
 
 import pandas as pd
 
@@ -76,3 +76,321 @@ df = pd.read_csv('survey_cleaned.csv')
 print(df.head().to_markdown(index=False, numalign="left", stralign="left"))  # Display the first few rows
 print(df.info())  # Get information about columns, data types, and missing values
 print(df.describe().to_markdown(numalign="left", stralign="left"))  # Summary statistics for numerical columns
+
+import pandas as pd
+
+# Load the dataset
+file_path = '/content/survey_cleaned.csv'
+df = pd.read_csv(file_path)
+
+# Select relevant columns
+relevant_columns = ['Age', 'treatment', 'work_interfere', 'family_history', 'Gender', 'tech_company', 'Country']
+df_filtered = df[relevant_columns]
+
+# Display the filtered DataFrame
+df_filtered.head()
+
+# Save the filtered DataFrame to a new CSV file (optional)
+df_filtered.to_csv('/content/survey_filtered.csv', index=False)
+
+import shutil
+shutil.copy('survey_filtered.csv', '/content/drive/MyDrive/survey_filtered.csv')
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the dataset
+file_path = '/content/survey_filtered.csv'
+df = pd.read_csv(file_path)
+
+# Filter the 'Age' column
+age_data = df['Age']
+
+
+# Plot the distribution of ages
+plt.figure(figsize=(12, 6))
+plt.hist(age_data, bins=20, edgecolor='black', color='skyblue')
+plt.title('Distribution of Ages')
+plt.xlabel('Age')
+plt.ylabel('Count')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()
+
+import pandas as pd
+
+# Load the dataset
+file_path = '/content/survey_filtered.csv'
+df = pd.read_csv(file_path)
+
+# Filter for people working in tech companies
+df_tech = df[df['tech_company'] == 'Yes']
+
+# Define age groups
+age_bins = [18, 25, 32, 39, 46, 53, 75]  # 53 and above is one group
+age_labels = ['18-24', '25-31', '32-38', '39-45', '46-52', '53+']
+
+# Filter and clean the Age column
+#df_tech = df_tech[(df_tech['Age'] >= 18) & (df_tech['Age'] <= 74)]
+
+# Create a new column for age groups
+df_tech['Age_Group'] = pd.cut(df_tech['Age'], bins=age_bins, labels=age_labels, right=False)
+
+# Define the criteria for having a mental health condition
+mental_health_criteria = ((df_tech['treatment'] == 'Yes') |
+                          (df_tech['family_history'] == 'Yes') |
+                          (df_tech['work_interfere'].isin(['Often', 'Rarely', 'Sometimes'])))
+
+# Create a column for mental health conditions
+df_tech['mental_health_conditions'] = mental_health_criteria.astype(int)
+
+# Group by age group and calculate the counts
+age_group_counts = df_tech.groupby('Age_Group').size().reset_index(name='Total_Count')
+mental_health_counts = df_tech.groupby('Age_Group')['mental_health_conditions'].sum().reset_index(name='Mental_Health_Count')
+
+# Merge the counts into one DataFrame
+summary_df = pd.merge(age_group_counts, mental_health_counts, on='Age_Group')
+
+# Calculate the percentage of people with mental health conditions in each age group
+summary_df['Percentage_Mental_Health'] = (summary_df['Mental_Health_Count'] / summary_df['Total_Count']) * 100
+
+# Display the summary DataFrame
+summary_df
+
+# Save the summary DataFrame to a new CSV file
+summary_df.to_csv('/content/tech_age_group_mental_health_summary.csv', index=False)
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the summary data
+summary_file_path = '/content/tech_age_group_mental_health_summary.csv'
+summary_df = pd.read_csv(summary_file_path)
+
+# Plotting
+plt.figure(figsize=(12, 6))
+
+# Bar graph for total count of people in each age group
+plt.bar(summary_df['Age_Group'], summary_df['Total_Count'], color='skyblue', label='Total Count', alpha=0.7)
+
+# Bar graph for count of people with mental health conditions
+plt.bar(summary_df['Age_Group'], summary_df['Mental_Health_Count'], color='salmon', label='Mental Health Count', alpha=0.7)
+
+# Adding labels and title
+plt.xlabel('Age Group')
+plt.ylabel('Count')
+plt.title('Distribution of People and Mental Health Conditions by Age Group')
+plt.legend()
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Display the plot
+plt.show()
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load the dataset
+file_path = '/content/survey_filtered.csv'
+df = pd.read_csv(file_path)
+
+# Filter for people working in tech companies
+df_tech = df[df['tech_company'] == 'Yes'].copy()
+
+# Standardize Gender values
+df_tech['Gender'] = df_tech['Gender'].str.strip().str.lower()
+df_tech['Gender'] = df_tech['Gender'].replace({'male': 'Male', 'm': 'Male', 'man': 'Male',
+                                               'female': 'Female', 'f': 'Female', 'woman': 'Female'})
+
+# Filter for relevant genders
+df_tech = df_tech[df_tech['Gender'].isin(['Male', 'Female'])]
+
+# Define mental health condition criteria
+mental_health_criteria = ((df_tech['treatment'] == 'Yes') |
+                          (df_tech['family_history'] == 'Yes') |
+                          (df_tech['work_interfere'].isin(['Often', 'Rarely', 'Sometimes'])))
+
+# Create a column for mental health conditions
+df_tech['mental_health_conditions'] = mental_health_criteria.astype(int)
+
+# Calculate total and mental health counts by gender
+gender_counts = df_tech.groupby('Gender').size().reset_index(name='Total_Count')
+mental_health_counts = df_tech.groupby('Gender')['mental_health_conditions'].sum().reset_index(name='Mental_Health_Count')
+
+# Merge the counts into one DataFrame
+summary_gender_df = pd.merge(gender_counts, mental_health_counts, on='Gender')
+
+# Calculate the percentage of people with mental health conditions for each gender
+summary_gender_df['Percentage_Mental_Health'] = (summary_gender_df['Mental_Health_Count'] / summary_gender_df['Total_Count']) * 100
+
+# Plotting
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Positions for the bars on the x-axis
+bar_width = 0.35
+index = np.arange(len(summary_gender_df['Gender']))
+
+# Bar graph for total count of people
+bars1 = ax.bar(index, summary_gender_df['Total_Count'], bar_width, label='Total Count', color='skyblue')
+
+# Bar graph for percentage of mental health conditions
+bars2 = ax.bar(index + bar_width, summary_gender_df['Percentage_Mental_Health'], bar_width, label='Percentage of Mental Health Conditions', color='salmon')
+
+# Adding labels and title
+ax.set_xlabel('Gender')
+ax.set_ylabel('Count and Percentage')
+ax.set_title('Total Count and Percentage of Mental Health Conditions by Gender')
+ax.set_xticks(index + bar_width / 2)
+ax.set_xticklabels(summary_gender_df['Gender'])
+ax.legend()
+
+# Annotate bars
+for bar in bars1:
+    height = bar.get_height()
+    ax.annotate(f'{height}',
+                xy=(bar.get_x() + bar.get_width() / 2, height),
+                xytext=(0, 3),  # 3 points vertical offset
+                textcoords="offset points",
+                ha='center', va='bottom')
+
+for bar in bars2:
+    height = bar.get_height()
+    ax.annotate(f'{height:.2f}%',
+                xy=(bar.get_x() + bar.get_width() / 2, height),
+                xytext=(0, 3),  # 3 points vertical offset
+                textcoords="offset points",
+                ha='center', va='bottom')
+
+# Display the plot
+plt.tight_layout()
+plt.show()
+
+# Save the summary DataFrame to a new CSV file
+summary_gender_df.to_csv('/content/tech_gender_mental_health_summary.csv', index=False)
+
+# Display the calculated statistics
+print(summary_gender_df)
+
+import pandas as pd
+
+# Load the dataset
+file_path = '/content/survey_filtered.csv'
+df = pd.read_csv(file_path)
+
+# Filter for people working in tech companies
+df_tech = df[df['tech_company'] == 'Yes'].copy()
+
+# Normalize country names
+df_tech['Country'] = df_tech['Country'].str.strip().str.lower()
+
+# Define mental health condition criteria
+mental_health_criteria = ((df_tech['treatment'] == 'Yes') |
+                          (df_tech['family_history'] == 'Yes') |
+                          (df_tech['work_interfere'].isin(['Often', 'Rarely', 'Sometimes'])))
+
+# Create a column for mental health conditions
+df_tech['mental_health_conditions'] = mental_health_criteria.astype(int)
+
+# Group by country and calculate the counts
+country_group = df_tech.groupby('Country')
+total_counts = country_group.size().reset_index(name='Total_Count')
+mental_health_counts = country_group['mental_health_conditions'].sum().reset_index(name='Mental_Health_Count')
+
+# Merge the counts into one DataFrame
+summary_country_df = pd.merge(total_counts, mental_health_counts, on='Country')
+
+# Calculate the percentage of people with mental health conditions for each country
+summary_country_df['Percentage_Mental_Health'] = (summary_country_df['Mental_Health_Count'] / summary_country_df['Total_Count']) * 100
+
+# Sort by percentage of mental health conditions
+sorted_summary = summary_country_df.sort_values(by='Percentage_Mental_Health', ascending=False)
+
+# Get the top 3 countries with the highest percentage
+top_3_highest = sorted_summary.head(3)
+
+# Get the top 3 countries with the lowest percentage (filtering out countries with no data)
+top_3_lowest = sorted_summary[sorted_summary['Total_Count'] > 0].tail(3)
+
+# Display the results
+print("Top 3 countries with the highest percentage of mental health conditions:")
+print(top_3_highest[['Country', 'Total_Count', 'Mental_Health_Count', 'Percentage_Mental_Health']])
+
+print("\nTop 3 countries with the lowest percentage of mental health conditions:")
+print(top_3_lowest[['Country', 'Total_Count', 'Mental_Health_Count', 'Percentage_Mental_Health']])
+
+# Save the summary DataFrame to a new CSV file
+summary_country_df.to_csv('/content/tech_country_mental_health_summary.csv', index=False)
+
+import pandas as pd
+
+# Load the dataset
+file_path = '/content/survey_filtered.csv'
+df = pd.read_csv(file_path)
+
+# Filter for people working in tech companies
+df_tech = df[df['tech_company'] == 'Yes'].copy()
+
+# Normalize country names
+df_tech['Country'] = df_tech['Country'].str.strip().str.lower()
+
+# Group by country and count the number of people in each group
+country_counts = df_tech['Country'].value_counts().reset_index()
+country_counts.columns = ['Country', 'Total_Count']
+
+# Display the results
+print(country_counts)
+
+# Save the result to a new CSV file
+country_counts.to_csv('/content/tech_country_group_counts.csv', index=False)
+
+import pandas as pd
+
+# Load the dataset
+file_path = '/content/survey_filtered.csv'
+df = pd.read_csv(file_path)
+
+# Filter for people working in tech companies
+df_tech = df[df['tech_company'] == 'Yes'].copy()
+
+# Normalize country names
+df_tech['Country'] = df_tech['Country'].str.strip().str.lower()
+
+# Define mental health condition criteria
+mental_health_criteria = ((df_tech['treatment'] == 'Yes') |
+                          (df_tech['family_history'] == 'Yes') |
+                          (df_tech['work_interfere'].isin(['Often', 'Rarely', 'Sometimes'])))
+
+# Create a column for mental health conditions
+df_tech['mental_health_conditions'] = mental_health_criteria.astype(int)
+
+# Group by country and calculate the counts
+country_group = df_tech.groupby('Country')
+total_counts = country_group.size().reset_index(name='Total_Count')
+mental_health_counts = country_group['mental_health_conditions'].sum().reset_index(name='Mental_Health_Count')
+
+# Merge the counts into one DataFrame
+summary_country_df = pd.merge(total_counts, mental_health_counts, on='Country')
+
+# Calculate the percentage of people with mental health conditions for each country
+summary_country_df['Percentage_Mental_Health'] = (summary_country_df['Mental_Health_Count'] / summary_country_df['Total_Count']) * 100
+
+# Filter for countries with more than 10 respondents
+filtered_summary = summary_country_df[summary_country_df['Total_Count'] > 10]
+
+# Sort by percentage of mental health conditions
+sorted_summary = filtered_summary.sort_values(by='Percentage_Mental_Health', ascending=False)
+
+# Get the top 3 countries with the highest percentage
+top_3_highest = sorted_summary.head(3)
+
+# Get the top 3 countries with the lowest percentage
+top_3_lowest = sorted_summary.tail(3)
+
+# Display the results
+print("Top 3 countries with the highest percentage of mental health conditions (more than 10 respondents):")
+print(top_3_highest[['Country', 'Total_Count', 'Mental_Health_Count', 'Percentage_Mental_Health']])
+
+print("\nTop 3 countries with the lowest percentage of mental health conditions (more than 10 respondents):")
+print(top_3_lowest[['Country', 'Total_Count', 'Mental_Health_Count', 'Percentage_Mental_Health']])
+
+# Save the summary DataFrame to a new CSV file
+summary_country_df.to_csv('/content/tech_country_mental_health_summary.csv', index=False)

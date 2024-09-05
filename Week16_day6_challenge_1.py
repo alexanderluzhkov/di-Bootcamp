@@ -4,7 +4,7 @@ import pandas as pd
 import io
 
 # Set your OpenAI API key as an environment variable
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = "My_API_KEY"
 
 # Initialize the OpenAI client
 client = OpenAI()
